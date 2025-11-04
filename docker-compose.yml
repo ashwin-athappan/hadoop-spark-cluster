@@ -1,0 +1,100 @@
+services:
+  namenode:
+    platform: linux/amd64
+    build:
+      context: ./namenode
+      platforms:
+        - linux/amd64
+    image: hadoop-namenode
+    container_name: namenode
+    restart: always
+    ports:
+      - 9870:9870
+      - 9000:9000
+      - 22:22
+    volumes:
+      - hadoop_namenode:/hadoop/dfs/name
+      - ${HOME}/.ssh/id_ed25519.pub:/tmp/authorized_keys:ro
+      - ./projects:/workspace
+    environment:
+      - CLUSTER_NAME=test
+    env_file:
+      - ./hadoop.env
+
+  datanode1:
+    platform: linux/amd64
+    build:
+      context: ./datanode
+      platforms:
+        - linux/amd64
+    image: hadoop-datanode
+    container_name: datanode1
+    restart: always
+    tmpfs:
+      - /hadoop/dfs/data:size=10G
+    environment:
+      SERVICE_PRECONDITION: "namenode:9870"
+    env_file:
+      - ./hadoop.env
+
+  datanode2:
+    platform: linux/amd64
+    image: hadoop-datanode
+    container_name: datanode2
+    restart: always
+    tmpfs:
+      - /hadoop/dfs/data:size=10G
+    environment:
+      SERVICE_PRECONDITION: "namenode:9870"
+    env_file:
+      - ./hadoop.env
+
+  resourcemanager:
+    platform: linux/amd64
+    build:
+      context: ./resourcemanager
+      platforms:
+        - linux/amd64
+    image: hadoop-resourcemanager
+    container_name: resourcemanager
+    restart: always
+    environment:
+      SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode1:9864 datanode2:9864"
+    env_file:
+      - ./hadoop.env
+
+  nodemanager1:
+    platform: linux/amd64
+    build:
+      context: ./nodemanager
+      platforms:
+        - linux/amd64
+    image: hadoop-nodemanager
+    container_name: nodemanager
+    restart: always
+    environment:
+      SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode1:9864 datanode2:9864 resourcemanager:8088"
+    env_file:
+      - ./hadoop.env
+
+  historyserver:
+    platform: linux/amd64
+    build:
+      context: ./historyserver
+      platforms:
+        - linux/amd64
+    image: hadoop-historyserver
+    container_name: historyserver
+    restart: always
+    environment:
+      SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode1:9864 datanode2:9864 resourcemanager:8088"
+    volumes:
+      - hadoop_historyserver:/hadoop/yarn/timeline
+    env_file:
+      - ./hadoop.env
+
+volumes:
+  hadoop_namenode:
+  hadoop_datanode1:
+  hadoop_datanode2:
+  hadoop_historyserver:
