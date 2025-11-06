@@ -15,7 +15,7 @@ services:
     volumes:
       - hadoop_namenode:/hadoop/dfs/name
       - ${HOME}/.ssh/id_ed25519.pub:/tmp/authorized_keys:ro
-      - ./projects:/workspace
+      - ../../projects:/workspace
     environment:
       - CLUSTER_NAME=test
     env_file:

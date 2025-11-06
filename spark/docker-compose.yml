@@ -1,0 +1,104 @@
+services:
+  spark-master:
+    platform: linux/amd64
+    build:
+      context: ./spark-master
+      platforms:
+        - linux/amd64
+    image: spark-master
+    container_name: spark-master
+    restart: always
+    ports:
+      - 8080:8080
+      - 7077:7077
+      - 22:22
+    volumes:
+      - spark_master_logs:/opt/spark-3.3.2/logs
+      - ${HOME}/.ssh/id_ed25519.pub:/tmp/authorized_keys:ro
+      - ../../projects:/workspace
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+      - SPARK_MASTER_HOST=spark-master
+      - SPARK_MASTER_PORT=7077
+      - SPARK_MASTER_WEBUI_PORT=8080
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=2g
+    env_file:
+      - ./spark.env
+
+  spark-worker1:
+    platform: linux/amd64
+    build:
+      context: ./spark-worker1
+      platforms:
+        - linux/amd64
+    image: spark-worker
+    container_name: spark-worker1
+    restart: always
+    ports:
+      - 8081:8081
+      - 22:22
+    volumes:
+      - spark_worker1_logs:/opt/spark-3.3.2/logs
+      - spark_logs:/spark-logs
+      - ${HOME}/.ssh/id_ed25519.pub:/tmp/authorized_keys:ro
+    environment:
+      - SERVICE_PRECONDITION=spark-master:7077
+      - SPARK_MASTER=spark://spark-master:7077
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=2g
+      - SPARK_WORKER_WEBUI_PORT=8081
+    env_file:
+      - ./spark.env
+
+  spark-worker2:
+    platform: linux/amd64
+    image: spark-worker
+    container_name: spark-worker2
+    restart: always
+    ports:
+      - 8082:8081
+      - 22:22
+    volumes:
+      - spark_worker2_logs:/opt/spark-3.3.2/logs
+      - spark_logs:/spark-logs
+      - ${HOME}/.ssh/id_ed25519.pub:/tmp/authorized_keys:ro
+    environment:
+      - SERVICE_PRECONDITION=spark-master:7077
+      - SPARK_MASTER=spark://spark-master:7077
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=2g
+      - SPARK_WORKER_WEBUI_PORT=8081
+    env_file:
+      - ./spark.env
+
+  spark-history:
+    platform: linux/amd64
+    build:
+      context: ./spark-history
+      platforms:
+        - linux/amd64
+    image: spark-history
+    container_name: spark-history
+    restart: always
+    ports:
+      - 18080:18080
+      - 22:22
+    volumes:
+      - spark_history_logs:/opt/spark-3.3.2/logs
+      - spark_logs:/spark-logs
+      - ${HOME}/.ssh/id_ed25519.pub:/tmp/authorized_keys:ro
+    environment:
+      - SERVICE_PRECONDITION=spark-master:7077
+      - SPARK_MASTER=spark://spark-master:7077
+      - SPARK_HISTORY_FS_LOGDIRECTORY=file:///spark-logs
+    env_file:
+      - ./spark.env
+
+volumes:
+  spark_master_logs:
+  spark_worker1_logs:
+  spark_worker2_logs:
+  spark_history_logs:
+  spark_logs:
+
